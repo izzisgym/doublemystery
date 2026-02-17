@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { splitPaymentIds } from "@/lib/payments";
+import { stripe, PRICES } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +31,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const paymentIntentIds = splitPaymentIds(session.paymentIntentIds);
+    if (paymentIntentIds.length === 0) {
+      return NextResponse.json(
+        { error: "No payment records found for session" },
+        { status: 400 }
+      );
+    }
+
+    // Verify all recorded payment intents are successful and sum correctly.
+    const intents = await Promise.all(
+      paymentIntentIds.map((id) => stripe.paymentIntents.retrieve(id))
+    );
+    const invalidIntent = intents.find((pi) => pi.status !== "succeeded");
+    if (invalidIntent) {
+      return NextResponse.json(
+        { error: "Session has incomplete payments" },
+        { status: 400 }
+      );
+    }
+
+    const paidCents = intents.reduce((sum, pi) => sum + pi.amount_received, 0);
+    const expectedCents = PRICES.ENTRY + session.rerollCount * PRICES.REROLL;
+    if (paidCents < expectedCents) {
+      return NextResponse.json(
+        { error: "Session payments do not match expected total" },
+        { status: 400 }
+      );
+    }
+
     // Create the order
     const order = await prisma.order.create({
       data: {
@@ -38,8 +69,8 @@ export async function POST(request: NextRequest) {
         city,
         state,
         zipCode,
-        totalAmount: session.totalSpent,
-        stripePaymentId: session.paymentIntentIds.split(",")[0] || null,
+        totalAmount: expectedCents / 100,
+        stripePaymentId: paymentIntentIds[0] || null,
         status: "pending",
       },
     });

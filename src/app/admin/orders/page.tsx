@@ -34,20 +34,25 @@ const STATUS_COLORS: Record<string, string> = {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 25;
 
-  const fetchOrders = () => {
-    fetch("/api/admin/orders")
+  const fetchOrders = (targetPage = page) => {
+    fetch(`/api/admin/orders?page=${targetPage}&pageSize=${pageSize}`)
       .then((r) => r.json())
       .then((data) => {
         setOrders(data.orders || []);
+        setTotal(data.pagination?.total || 0);
         setLoading(false);
       })
       .catch(console.error);
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const updateStatus = async (orderId: string, status: string) => {
     await fetch("/api/admin/orders", {
@@ -55,7 +60,7 @@ export default function OrdersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId, status }),
     });
-    fetchOrders();
+    fetchOrders(page);
   };
 
   if (loading) {
@@ -74,7 +79,7 @@ export default function OrdersPage() {
             Orders
           </h1>
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, margin: "4px 0 0" }}>
-            {orders.length} total order{orders.length !== 1 ? "s" : ""}
+            {total} total order{total !== 1 ? "s" : ""}
           </p>
         </div>
       </div>
@@ -210,6 +215,57 @@ export default function OrdersPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {total > pageSize && (
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+            Page {page} of {Math.ceil(total / pageSize)}
+          </span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.04)",
+                color: page <= 1 ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)",
+                cursor: page <= 1 ? "not-allowed" : "pointer",
+              }}
+            >
+              Prev
+            </button>
+            <button
+              onClick={() =>
+                setPage((p) => Math.min(Math.ceil(total / pageSize), p + 1))
+              }
+              disabled={page >= Math.ceil(total / pageSize)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.04)",
+                color:
+                  page >= Math.ceil(total / pageSize)
+                    ? "rgba(255,255,255,0.2)"
+                    : "rgba(255,255,255,0.7)",
+                cursor:
+                  page >= Math.ceil(total / pageSize) ? "not-allowed" : "pointer",
+              }}
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

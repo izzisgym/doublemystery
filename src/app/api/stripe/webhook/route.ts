@@ -33,7 +33,9 @@ export async function POST(request: NextRequest) {
           const existingIds = session.paymentIntentIds
             ? session.paymentIntentIds.split(",")
             : [];
-          existingIds.push(paymentIntent.id);
+          if (!existingIds.includes(paymentIntent.id)) {
+            existingIds.push(paymentIntent.id);
+          }
 
           await prisma.blindboxSession.update({
             where: { id: sessionId },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { splitPaymentIds, verifyPaymentIntent } from "@/lib/payments";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,6 +10,12 @@ export async function POST(request: NextRequest) {
       type: "box" | "item";
       paymentIntentId: string;
     };
+    if (!sessionId || !paymentIntentId) {
+      return NextResponse.json(
+        { error: "sessionId and paymentIntentId are required" },
+        { status: 400 }
+      );
+    }
 
     const session = await prisma.blindboxSession.findUnique({
       where: { id: sessionId },
@@ -21,11 +28,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await verifyPaymentIntent(paymentIntentId, "reroll", sessionId);
+
+    const ids = splitPaymentIds(session.paymentIntentIds);
+    if (ids.includes(paymentIntentId)) {
+      return NextResponse.json(
+        { error: "Payment intent already used for this session" },
+        { status: 409 }
+      );
+    }
+
     // Record the reroll payment
-    const existingIds = session.paymentIntentIds
-      ? session.paymentIntentIds.split(",")
-      : [];
-    existingIds.push(paymentIntentId);
+    const existingIds = [...ids, paymentIntentId];
 
     await prisma.blindboxSession.update({
       where: { id: sessionId },
