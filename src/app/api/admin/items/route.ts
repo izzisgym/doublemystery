@@ -4,14 +4,20 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, rarity, boxId } = body as {
+    const { name, rarity, boxId, imageUrl } = body as {
       name: string;
       rarity?: string;
       boxId: string;
+      imageUrl?: string;
     };
 
     const item = await prisma.item.create({
-      data: { name, rarity: rarity || "standard", boxId },
+      data: {
+        name,
+        rarity: rarity || "standard",
+        boxId,
+        imageUrl: imageUrl?.trim() || null,
+      },
     });
 
     return NextResponse.json({ item });
@@ -27,15 +33,20 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, rarity } = body as {
+    const { id, name, rarity, imageUrl } = body as {
       id: string;
       name: string;
       rarity?: string;
+      imageUrl?: string;
     };
 
     const item = await prisma.item.update({
       where: { id },
-      data: { name, rarity: rarity || "standard" },
+      data: {
+        name,
+        rarity: rarity || "standard",
+        imageUrl: imageUrl?.trim() || null,
+      },
     });
 
     return NextResponse.json({ item });

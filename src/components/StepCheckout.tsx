@@ -5,7 +5,7 @@ import { useState } from "react";
 interface CheckoutProps {
   universe: { name: string; emoji: string; color: string; gradient: string };
   box: { name: string; img: string } | null;
-  item: { name: string } | null;
+  item: { name: string; imageUrl?: string | null } | null;
   rerollCount: number;
   totalSpent: number;
   sessionId: string;
@@ -349,6 +349,21 @@ export default function StepCheckout({
             </span>
           </div>
         ))}
+        {item?.imageUrl && (
+          <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              style={{
+                width: 64,
+                height: 64,
+                objectFit: "cover",
+                borderRadius: 10,
+                border: "1px solid rgba(255,255,255,0.15)",
+              }}
+            />
+          </div>
+        )}
         <div
           style={{
             display: "flex",

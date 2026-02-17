@@ -6,6 +6,7 @@ interface Item {
   id: string;
   name: string;
   rarity: string;
+  imageUrl?: string | null;
 }
 
 interface Box {
@@ -65,7 +66,11 @@ export default function UniversesPage() {
 
   // New item form
   const [addingItemTo, setAddingItemTo] = useState<string | null>(null);
-  const [newItem, setNewItem] = useState({ name: "", rarity: "standard" });
+  const [newItem, setNewItem] = useState({
+    name: "",
+    rarity: "standard",
+    imageUrl: "",
+  });
 
   const fetchUniverses = useCallback(() => {
     fetch("/api/admin/universes")
@@ -127,7 +132,7 @@ export default function UniversesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...newItem, boxId }),
     });
-    setNewItem({ name: "", rarity: "standard" });
+    setNewItem({ name: "", rarity: "standard", imageUrl: "" });
     setAddingItemTo(null);
     fetchUniverses();
   };
@@ -357,7 +362,10 @@ export default function UniversesPage() {
                                 Items
                               </span>
                               <button
-                                onClick={() => { setAddingItemTo(addingItemTo === box.id ? null : box.id); setNewItem({ name: "", rarity: "standard" }); }}
+                                onClick={() => {
+                                  setAddingItemTo(addingItemTo === box.id ? null : box.id);
+                                  setNewItem({ name: "", rarity: "standard", imageUrl: "" });
+                                }}
                                 style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 12, cursor: "pointer", fontWeight: 600 }}
                               >
                                 + Add Item
@@ -365,10 +373,10 @@ export default function UniversesPage() {
                             </div>
 
                             {addingItemTo === box.id && (
-                              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                                <input style={{ ...inputStyle, flex: 1, padding: "8px 12px", fontSize: 13 }} placeholder="Item name" value={newItem.name} onChange={(e) => setNewItem((i) => ({ ...i, name: e.target.value }))} />
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 120px auto", gap: 8, marginBottom: 8 }}>
+                                <input style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }} placeholder="Item name" value={newItem.name} onChange={(e) => setNewItem((i) => ({ ...i, name: e.target.value }))} />
                                 <select
-                                  style={{ ...inputStyle, width: 110, padding: "8px 12px", fontSize: 13 }}
+                                  style={{ ...inputStyle, width: 120, padding: "8px 12px", fontSize: 13 }}
                                   value={newItem.rarity}
                                   onChange={(e) => setNewItem((i) => ({ ...i, rarity: e.target.value }))}
                                 >
@@ -378,6 +386,16 @@ export default function UniversesPage() {
                                 </select>
                                 <button onClick={() => createItem(box.id)} style={{ ...btnStyle, background: "#6BCB77", color: "#000", padding: "8px 14px", fontSize: 12 }}>Add</button>
                               </div>
+                            )}
+                            {addingItemTo === box.id && (
+                              <input
+                                style={{ ...inputStyle, padding: "8px 12px", fontSize: 13, marginBottom: 8 }}
+                                placeholder="Optional image URL (https://...)"
+                                value={newItem.imageUrl}
+                                onChange={(e) =>
+                                  setNewItem((i) => ({ ...i, imageUrl: e.target.value }))
+                                }
+                              />
                             )}
 
                             {box.items.length === 0 ? (
@@ -399,7 +417,21 @@ export default function UniversesPage() {
                                     }}
                                   >
                                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                      <span style={{ fontSize: 12 }}>🌟</span>
+                                      {item.imageUrl ? (
+                                        <img
+                                          src={item.imageUrl}
+                                          alt={item.name}
+                                          style={{
+                                            width: 22,
+                                            height: 22,
+                                            objectFit: "cover",
+                                            borderRadius: 4,
+                                            border: "1px solid rgba(255,255,255,0.1)",
+                                          }}
+                                        />
+                                      ) : (
+                                        <span style={{ fontSize: 12 }}>🌟</span>
+                                      )}
                                       <span style={{ fontSize: 13, fontWeight: 600 }}>{item.name}</span>
                                       {item.rarity !== "standard" && (
                                         <span

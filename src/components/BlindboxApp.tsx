@@ -34,6 +34,7 @@ interface BoxData {
 interface ItemData {
   id: string;
   name: string;
+  imageUrl?: string | null;
 }
 
 interface UniverseInfo {

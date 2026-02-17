@@ -3,6 +3,7 @@
 interface ItemData {
   id: string;
   name: string;
+  imageUrl?: string | null;
 }
 
 interface BoxData {
@@ -107,15 +108,31 @@ export default function StepRevealItem({
           </>
         ) : item ? (
           <>
-            <div
-              style={{
-                fontSize: 48,
-                marginBottom: 4,
-                animation: "bounceIn 0.6s ease both",
-              }}
-            >
-              🌟
-            </div>
+            {item.imageUrl ? (
+              <img
+                src={item.imageUrl}
+                alt={item.name}
+                style={{
+                  width: 96,
+                  height: 96,
+                  objectFit: "cover",
+                  borderRadius: 12,
+                  marginBottom: 10,
+                  animation: "bounceIn 0.6s ease both",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  fontSize: 48,
+                  marginBottom: 4,
+                  animation: "bounceIn 0.6s ease both",
+                }}
+              >
+                🌟
+              </div>
+            )}
             <div
               style={{
                 fontSize: 20,

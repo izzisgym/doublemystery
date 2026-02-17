@@ -19,7 +19,7 @@ interface Order {
       img: string;
       universe: { name: string; emoji: string; color: string };
     } | null;
-    selectedItem: { name: string } | null;
+    selectedItem: { name: string; imageUrl?: string | null } | null;
   };
 }
 
@@ -180,7 +180,23 @@ export default function OrdersPage() {
                     <span style={{ color: "rgba(255,255,255,0.15)" }}>|</span>
                     <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>Item:</span>
                     <span style={{ fontSize: 13, fontWeight: 600 }}>
-                      🌟 {order.session.selectedItem.name}
+                      {order.session.selectedItem.imageUrl ? (
+                        <img
+                          src={order.session.selectedItem.imageUrl}
+                          alt={order.session.selectedItem.name}
+                          style={{
+                            width: 18,
+                            height: 18,
+                            objectFit: "cover",
+                            borderRadius: 4,
+                            verticalAlign: "middle",
+                            marginRight: 6,
+                          }}
+                        />
+                      ) : (
+                        "🌟 "
+                      )}
+                      {order.session.selectedItem.name}
                     </span>
                   </>
                 )}
