@@ -294,7 +294,7 @@ export default function BlindboxApp() {
   const stripePaymentAmount =
     paymentType === "entry" ? 1300 : 200;
   const stripePaymentLabel =
-    paymentType === "entry" ? "Blindbox Entry" : "Reroll Fee";
+    paymentType === "entry" ? "Double Mystery Entry" : "Reroll Fee";
 
   return (
     <Elements stripe={stripePromise}>
@@ -360,7 +360,7 @@ export default function BlindboxApp() {
                   letterSpacing: "-0.5px",
                 }}
               >
-                BLINDBOX
+                DOUBLE MYSTERY
               </div>
               <div
                 style={{
@@ -371,7 +371,7 @@ export default function BlindboxApp() {
                   textTransform: "uppercase",
                 }}
               >
-                Double Mystery
+                Mystery Box Experience
               </div>
             </div>
           </div>

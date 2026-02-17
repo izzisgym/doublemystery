@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BLINDBOX - Double Mystery",
+  title: "Double Mystery",
   description: "Pick a genre. Get a mystery box. Open it for a mystery item.",
 };
 

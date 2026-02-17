@@ -12,8 +12,8 @@ export async function POST(request: NextRequest) {
     const amount = type === "entry" ? PRICES.ENTRY : PRICES.REROLL;
     const description =
       type === "entry"
-        ? "Blindbox Entry - Double Mystery"
-        : "Blindbox Reroll";
+        ? "Double Mystery - Entry"
+        : "Double Mystery - Reroll";
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount,

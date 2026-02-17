@@ -424,7 +424,7 @@ export default function StepCheckout({
           cursor: "pointer",
         }}
       >
-        🎁 Open Another Blindbox!
+        🎁 Open Another Mystery Box!
       </button>
     </div>
   );
