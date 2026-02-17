@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Universe {
+  id       String @id @default(cuid())
+  slug     String @unique
+  name     String
+  emoji    String
+  color    String
+  gradient String
+  boxes    Box[]
+}
+
+model Box {
+  id         String            @id @default(cuid())
+  name       String
+  img        String
+  universeId String
+  universe   Universe          @relation(fields: [universeId], references: [id])
+  items      Item[]
+  sessions   BlindboxSession[] @relation("SessionBox")
+}
+
+model Item {
+  id       String            @id @default(cuid())
+  name     String
+  rarity   String            @default("standard")
+  boxId    String
+  box      Box               @relation(fields: [boxId], references: [id])
+  sessions BlindboxSession[] @relation("SessionItem")
+}
+
+model BlindboxSession {
+  id               String   @id @default(cuid())
+  status           String   @default("active")
+  universeSlug     String?
+  selectedBoxId    String?
+  selectedBox      Box?     @relation("SessionBox", fields: [selectedBoxId], references: [id])
+  selectedItemId   String?
+  selectedItem     Item?    @relation("SessionItem", fields: [selectedItemId], references: [id])
+  rerollCount      Int      @default(0)
+  totalSpent       Float    @default(0)
+  paymentIntentIds String   @default("")
+  currentStep      String   @default("select")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  order            Order?
+}
+
+model Order {
+  id              String          @id @default(cuid())
+  sessionId       String          @unique
+  session         BlindboxSession @relation(fields: [sessionId], references: [id])
+  customerName    String
+  streetAddress   String
+  city            String
+  state           String
+  zipCode         String
+  totalAmount     Float
+  stripePaymentId String?
+  status          String          @default("pending")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
