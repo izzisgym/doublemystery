@@ -9,11 +9,20 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Fredoka", "Nunito", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  font-size: 16px;
 }
 
 @keyframes confettiFall {

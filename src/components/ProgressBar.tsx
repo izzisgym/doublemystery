@@ -31,9 +31,9 @@ export default function ProgressBar({
               />
               <div
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   textAlign: "center",
-                  marginTop: 4,
+                  marginTop: 6,
                   color: isActive ? color : "rgba(255,255,255,0.25)",
                   fontWeight: 700,
                   letterSpacing: "0.5px",

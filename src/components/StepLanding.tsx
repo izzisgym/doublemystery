@@ -18,7 +18,7 @@ export default function StepLanding({ onBuy }: { onBuy: () => void }) {
         <h1
           style={{
             fontFamily: "'Fredoka', sans-serif",
-            fontSize: 36,
+            fontSize: 40,
             fontWeight: 700,
             color: "#fff",
             margin: "0 0 8px",
@@ -43,13 +43,13 @@ export default function StepLanding({ onBuy }: { onBuy: () => void }) {
         <p
           style={{
             color: "rgba(255,255,255,0.5)",
-            fontSize: 15,
+            fontSize: 17,
             margin: 0,
             fontWeight: 500,
-            lineHeight: 1.5,
+            lineHeight: 1.6,
           }}
         >
-          Pick a genre. Get a mystery box.
+          Pick a fandom. Get a mystery box.
           <br />
           Open it for a mystery item.
         </p>
@@ -67,7 +67,7 @@ export default function StepLanding({ onBuy }: { onBuy: () => void }) {
       >
         <div
           style={{
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 700,
             color: "rgba(255,255,255,0.3)",
             letterSpacing: "2px",
@@ -80,7 +80,7 @@ export default function StepLanding({ onBuy }: { onBuy: () => void }) {
         {[
           {
             emoji: "🎯",
-            text: "Pick your genre",
+            text: "Pick your fandom",
             sub: "Pokémon, One Piece, JJK, or Gundam",
           },
           {
@@ -105,15 +105,15 @@ export default function StepLanding({ onBuy }: { onBuy: () => void }) {
               display: "flex",
               alignItems: "center",
               gap: 14,
-              padding: "10px 0",
+              padding: "12px 0",
               borderBottom:
                 i < 3 ? "1px solid rgba(255,255,255,0.04)" : "none",
             }}
           >
             <div
               style={{
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 borderRadius: 14,
                 background: "rgba(255,255,255,0.06)",
                 display: "flex",
@@ -126,13 +126,13 @@ export default function StepLanding({ onBuy }: { onBuy: () => void }) {
               {item.emoji}
             </div>
             <div>
-              <div style={{ color: "#fff", fontWeight: 600, fontSize: 14 }}>
+              <div style={{ color: "#fff", fontWeight: 600, fontSize: 16 }}>
                 {item.text}
               </div>
               <div
                 style={{
                   color: "rgba(255,255,255,0.35)",
-                  fontSize: 12,
+                  fontSize: 13,
                   marginTop: 2,
                 }}
               >
@@ -148,14 +148,14 @@ export default function StepLanding({ onBuy }: { onBuy: () => void }) {
         onClick={onBuy}
         style={{
           width: "100%",
-          padding: "18px 24px",
+          padding: "20px 24px",
           background:
             "linear-gradient(135deg, #FF6B6B 0%, #FFD93D 50%, #6BCB77 100%)",
           backgroundSize: "200% 200%",
           animation: "bgPan 4s ease infinite, pulseScale 2s ease-in-out infinite",
           border: "none",
           borderRadius: 18,
-          fontSize: 18,
+          fontSize: 20,
           fontWeight: 700,
           color: "#000",
           fontFamily: "'Fredoka', sans-serif",
@@ -170,7 +170,7 @@ export default function StepLanding({ onBuy }: { onBuy: () => void }) {
         style={{
           textAlign: "center",
           marginTop: 10,
-          fontSize: 12,
+          fontSize: 13,
           color: "rgba(255,255,255,0.3)",
         }}
       >

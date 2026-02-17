@@ -97,7 +97,7 @@ export default function PaymentModal({
           maxWidth: 430,
           background: "#1a1a2e",
           borderRadius: "24px 24px 0 0",
-          padding: "28px 24px 40px",
+          padding: "30px 24px 42px",
           animation: "slideUp 0.4s ease",
         }}
       >
@@ -114,7 +114,7 @@ export default function PaymentModal({
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div
             style={{
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 700,
               color: "rgba(255,255,255,0.3)",
               letterSpacing: "2px",
@@ -126,7 +126,7 @@ export default function PaymentModal({
           </div>
           <div
             style={{
-              fontSize: 36,
+              fontSize: 40,
               fontWeight: 700,
               color: "#fff",
               fontFamily: "'Fredoka', sans-serif",
@@ -137,7 +137,7 @@ export default function PaymentModal({
           <div
             style={{
               color: "rgba(255,255,255,0.4)",
-              fontSize: 13,
+              fontSize: 15,
               marginTop: 4,
             }}
           >
@@ -148,7 +148,7 @@ export default function PaymentModal({
         <div style={{ marginBottom: 24 }}>
           <div
             style={{
-              fontSize: 11,
+              fontSize: 12,
               color: "rgba(255,255,255,0.35)",
               marginBottom: 8,
               fontWeight: 600,
@@ -179,7 +179,7 @@ export default function PaymentModal({
           <div
             style={{
               color: "#e63946",
-              fontSize: 13,
+              fontSize: 14,
               textAlign: "center",
               marginBottom: 16,
               fontWeight: 600,
@@ -194,11 +194,11 @@ export default function PaymentModal({
           disabled={isProcessing || !stripe}
           style={{
             width: "100%",
-            padding: "18px 24px",
+            padding: "20px 24px",
             background: isProcessing ? "rgba(255,255,255,0.1)" : gradient,
             border: "none",
             borderRadius: 16,
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: 700,
             color: "#fff",
             fontFamily: "'Fredoka', sans-serif",
@@ -217,11 +217,11 @@ export default function PaymentModal({
           style={{
             width: "100%",
             marginTop: 12,
-            padding: "14px",
+            padding: "16px",
             background: "none",
             border: "none",
             color: "rgba(255,255,255,0.4)",
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 600,
             cursor: "pointer",
             fontFamily: "'Fredoka', sans-serif",

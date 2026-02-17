@@ -21,7 +21,7 @@ export default function StepGenre({
       <div style={{ textAlign: "center", marginBottom: 24, marginTop: 8 }}>
         <div
           style={{
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 700,
             color: "rgba(255,255,255,0.3)",
             letterSpacing: "2px",
@@ -34,22 +34,22 @@ export default function StepGenre({
         <h2
           style={{
             fontFamily: "'Fredoka', sans-serif",
-            fontSize: 28,
+            fontSize: 30,
             fontWeight: 700,
             color: "#fff",
             margin: 0,
           }}
         >
-          Choose Your Universe
+          Choose Your Fandom
         </h2>
         <p
           style={{
             color: "rgba(255,255,255,0.4)",
-            fontSize: 14,
+            fontSize: 16,
             margin: "8px 0 0",
           }}
         >
-          Each universe has mystery boxes waiting for you
+          Each fandom has mystery boxes waiting for you
         </p>
       </div>
 
@@ -60,7 +60,7 @@ export default function StepGenre({
             onClick={() => onSelect(universe.slug)}
             style={{
               width: "100%",
-              padding: "20px",
+              padding: "22px",
               background:
                 "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
               border: "1px solid rgba(255,255,255,0.08)",
@@ -86,8 +86,8 @@ export default function StepGenre({
           >
             <div
               style={{
-                width: 56,
-                height: 56,
+                width: 60,
+                height: 60,
                 borderRadius: 16,
                 background: universe.gradient,
                 display: "flex",
@@ -105,7 +105,7 @@ export default function StepGenre({
                 style={{
                   color: "#fff",
                   fontWeight: 700,
-                  fontSize: 18,
+                  fontSize: 20,
                   fontFamily: "'Fredoka', sans-serif",
                 }}
               >
@@ -114,7 +114,7 @@ export default function StepGenre({
               <div
                 style={{
                   color: "rgba(255,255,255,0.35)",
-                  fontSize: 12,
+                  fontSize: 13,
                   marginTop: 3,
                 }}
               >

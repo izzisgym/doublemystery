@@ -38,7 +38,7 @@ export default function StepRevealItem({
       <div style={{ marginBottom: 24, marginTop: 8 }}>
         <div
           style={{
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 700,
             color: "rgba(255,255,255,0.3)",
             letterSpacing: "2px",
@@ -51,7 +51,7 @@ export default function StepRevealItem({
         <h2
           style={{
             fontFamily: "'Fredoka', sans-serif",
-            fontSize: 26,
+            fontSize: 30,
             fontWeight: 700,
             color: "#fff",
             margin: 0,
@@ -64,8 +64,8 @@ export default function StepRevealItem({
       {/* Item Reveal */}
       <div
         style={{
-          width: 220,
-          minHeight: 240,
+          width: 240,
+          minHeight: 270,
           margin: "0 auto 32px",
           borderRadius: 24,
           background: isRevealing
@@ -98,7 +98,7 @@ export default function StepRevealItem({
             <div
               style={{
                 marginTop: 16,
-                fontSize: 13,
+                fontSize: 14,
                 color: "rgba(255,255,255,0.4)",
                 fontWeight: 600,
               }}
@@ -113,8 +113,8 @@ export default function StepRevealItem({
                 src={item.imageUrl}
                 alt={item.name}
                 style={{
-                  width: 96,
-                  height: 96,
+                  width: 112,
+                  height: 112,
                   objectFit: "cover",
                   borderRadius: 12,
                   marginBottom: 10,
@@ -135,7 +135,7 @@ export default function StepRevealItem({
             )}
             <div
               style={{
-                fontSize: 20,
+                fontSize: 24,
                 fontWeight: 700,
                 color: "#fff",
                 fontFamily: "'Fredoka', sans-serif",
@@ -151,7 +151,7 @@ export default function StepRevealItem({
                 padding: "4px 16px",
                 borderRadius: 20,
                 background: universe.gradient,
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: 700,
                 color: "#fff",
                 animation: "bounceIn 0.6s ease 0.3s both",
@@ -163,7 +163,7 @@ export default function StepRevealItem({
             <div
               style={{
                 marginTop: 6,
-                fontSize: 11,
+                fontSize: 12,
                 color: "rgba(255,255,255,0.35)",
                 animation: "bounceIn 0.6s ease 0.4s both",
               }}
@@ -188,11 +188,11 @@ export default function StepRevealItem({
             onClick={onAccept}
             style={{
               width: "100%",
-              padding: "16px 24px",
+              padding: "18px 24px",
               background: universe.gradient,
               border: "none",
               borderRadius: 16,
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: 700,
               color: "#fff",
               fontFamily: "'Fredoka', sans-serif",
@@ -206,11 +206,11 @@ export default function StepRevealItem({
             onClick={onReroll}
             style={{
               width: "100%",
-              padding: "14px 24px",
+              padding: "16px 24px",
               background: "rgba(255,255,255,0.06)",
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: 16,
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: 600,
               color: "rgba(255,255,255,0.7)",
               fontFamily: "'Fredoka', sans-serif",

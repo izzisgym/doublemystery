@@ -306,7 +306,7 @@ export default function BlindboxApp() {
           fontFamily: "'Fredoka', 'Nunito', sans-serif",
           position: "relative",
           overflow: "hidden",
-          maxWidth: 430,
+          maxWidth: 460,
           margin: "0 auto",
         }}
       >
@@ -334,7 +334,7 @@ export default function BlindboxApp() {
             background: "rgba(10,10,15,0.85)",
             backdropFilter: "blur(20px)",
             borderBottom: "1px solid rgba(255,255,255,0.06)",
-            padding: "14px 20px",
+            padding: "16px 20px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -354,7 +354,7 @@ export default function BlindboxApp() {
                 style={{
                   fontFamily: "'Fredoka', sans-serif",
                   fontWeight: 700,
-                  fontSize: 20,
+                  fontSize: 22,
                   background: currentGradient,
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -365,10 +365,10 @@ export default function BlindboxApp() {
               </div>
               <div
                 style={{
-                  fontSize: 10,
+                  fontSize: 12,
                   color: "rgba(255,255,255,0.4)",
                   fontWeight: 600,
-                  letterSpacing: "2px",
+                  letterSpacing: "1.3px",
                   textTransform: "uppercase",
                 }}
               >
@@ -381,8 +381,8 @@ export default function BlindboxApp() {
               style={{
                 background: "rgba(255,255,255,0.08)",
                 borderRadius: 20,
-                padding: "6px 14px",
-                fontSize: 13,
+                padding: "8px 14px",
+                fontSize: 15,
                 color: "#fff",
                 fontWeight: 600,
               }}
@@ -402,7 +402,7 @@ export default function BlindboxApp() {
         {/* Main Content */}
         <div
           style={{
-            padding: "20px 20px 120px",
+            padding: "24px 20px 120px",
             position: "relative",
             zIndex: 10,
             animation: slideIn ? "slideUp 0.5s ease" : "none",

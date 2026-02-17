@@ -78,7 +78,7 @@ export default function StepCheckout({
         <h2
           style={{
             fontFamily: "'Fredoka', sans-serif",
-            fontSize: 26,
+            fontSize: 30,
             fontWeight: 700,
             color: "#fff",
             margin: "0 0 8px",
@@ -89,7 +89,7 @@ export default function StepCheckout({
         <p
           style={{
             color: "rgba(255,255,255,0.4)",
-            fontSize: 14,
+            fontSize: 16,
             margin: "0 0 24px",
           }}
         >
@@ -119,7 +119,7 @@ export default function StepCheckout({
             <div key={key} style={{ marginBottom: 16 }}>
               <div
                 style={{
-                  fontSize: 11,
+                  fontSize: 12,
                   color: "rgba(255,255,255,0.35)",
                   marginBottom: 6,
                   fontWeight: 600,
@@ -143,7 +143,7 @@ export default function StepCheckout({
                   border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: 12,
                   color: "#fff",
-                  fontSize: 15,
+                  fontSize: 16,
                   fontFamily: "'Nunito', sans-serif",
                   outline: "none",
                   transition: "border-color 0.2s",
@@ -164,7 +164,7 @@ export default function StepCheckout({
             <div style={{ flex: 1 }}>
               <div
                 style={{
-                  fontSize: 11,
+                  fontSize: 12,
                   color: "rgba(255,255,255,0.35)",
                   marginBottom: 6,
                   fontWeight: 600,
@@ -188,7 +188,7 @@ export default function StepCheckout({
                   border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: 12,
                   color: "#fff",
-                  fontSize: 15,
+                  fontSize: 16,
                   fontFamily: "'Nunito', sans-serif",
                   outline: "none",
                 }}
@@ -242,11 +242,11 @@ export default function StepCheckout({
           }
           style={{
             width: "100%",
-            padding: "16px 24px",
+            padding: "18px 24px",
             background: universe.gradient,
             border: "none",
             borderRadius: 16,
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: 700,
             color: "#fff",
             fontFamily: "'Fredoka', sans-serif",
@@ -276,7 +276,7 @@ export default function StepCheckout({
       <h2
         style={{
           fontFamily: "'Fredoka', sans-serif",
-          fontSize: 30,
+          fontSize: 34,
           fontWeight: 700,
           color: "#fff",
           margin: "0 0 8px",
@@ -287,7 +287,7 @@ export default function StepCheckout({
       <p
         style={{
           color: "rgba(255,255,255,0.4)",
-          fontSize: 14,
+          fontSize: 16,
           margin: "0 0 28px",
         }}
       >
@@ -308,7 +308,7 @@ export default function StepCheckout({
       >
         <div
           style={{
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 700,
             color: "rgba(255,255,255,0.3)",
             letterSpacing: "2px",
@@ -320,7 +320,7 @@ export default function StepCheckout({
         </div>
         {[
           {
-            label: "Universe",
+            label: "Fandom",
             value: universe.name,
             emoji: universe.emoji,
           },
@@ -340,11 +340,11 @@ export default function StepCheckout({
             }}
           >
             <span
-              style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}
+              style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}
             >
               {row.label}
             </span>
-            <span style={{ color: "#fff", fontSize: 14, fontWeight: 600 }}>
+            <span style={{ color: "#fff", fontSize: 15, fontWeight: 600 }}>
               {row.emoji} {row.value}
             </span>
           </div>
@@ -355,8 +355,8 @@ export default function StepCheckout({
               src={item.imageUrl}
               alt={item.name}
               style={{
-                width: 64,
-                height: 64,
+            width: 72,
+            height: 72,
                 objectFit: "cover",
                 borderRadius: 10,
                 border: "1px solid rgba(255,255,255,0.15)",
@@ -374,12 +374,12 @@ export default function StepCheckout({
             borderTop: `2px solid ${universe.color}33`,
           }}
         >
-          <span style={{ color: "#fff", fontSize: 16, fontWeight: 700 }}>
+          <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>
             Total
           </span>
           <span
             style={{
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: 700,
               background: universe.gradient,
               WebkitBackgroundClip: "text",
@@ -405,13 +405,13 @@ export default function StepCheckout({
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ fontSize: 28 }}>📬</div>
           <div style={{ textAlign: "left" }}>
-            <div style={{ color: "#fff", fontWeight: 600, fontSize: 14 }}>
+            <div style={{ color: "#fff", fontWeight: 600, fontSize: 15 }}>
               Estimated Delivery
             </div>
             <div
               style={{
                 color: "rgba(255,255,255,0.35)",
-                fontSize: 12,
+                fontSize: 13,
                 marginTop: 2,
               }}
             >
@@ -425,14 +425,14 @@ export default function StepCheckout({
         onClick={onStartOver}
         style={{
           width: "100%",
-          padding: "16px 24px",
+          padding: "18px 24px",
           background:
             "linear-gradient(135deg, #FF6B6B 0%, #FFD93D 50%, #6BCB77 100%)",
           backgroundSize: "200% 200%",
           animation: "bgPan 4s ease infinite, slideUp 0.5s ease 0.5s both",
           border: "none",
           borderRadius: 16,
-          fontSize: 16,
+          fontSize: 18,
           fontWeight: 700,
           color: "#000",
           fontFamily: "'Fredoka', sans-serif",

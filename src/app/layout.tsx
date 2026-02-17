@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Double Mystery",
-  description: "Pick a genre. Get a mystery box. Open it for a mystery item.",
+  description: "Pick a fandom. Get a mystery box. Open it for a mystery item.",
 };
 
 export default function RootLayout({
