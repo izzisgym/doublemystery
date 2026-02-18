@@ -68,6 +68,7 @@ export default function BlindboxApp() {
   const [selectedItem, setSelectedItem] = useState<ItemData | null>(null);
   const [isRevealing, setIsRevealing] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
   const [totalSpent, setTotalSpent] = useState(0);
   const [rerollCount, setRerollCount] = useState(0);
 
@@ -112,6 +113,14 @@ export default function BlindboxApp() {
     setTimeout(() => setShowConfetti(false), duration);
   };
 
+  const parseApiResponse = async (res: Response) => {
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Request failed");
+    }
+    return data;
+  };
+
   // --- Payment Handlers ---
 
   const handleBuy = () => {
@@ -130,12 +139,16 @@ export default function BlindboxApp() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ paymentIntentId }),
         });
-        const data = await res.json();
+        const data = await parseApiResponse(res);
         setSessionId(data.sessionId);
         setTotalSpent(13);
+        setInlineError(null);
         setStep("genre");
       } catch (err) {
         console.error("Error creating session:", err);
+        setInlineError(
+          err instanceof Error ? err.message : "Failed to create session."
+        );
       }
     } else if (paymentType === "reroll_box") {
       setRerollCount((c) => c + 1);
@@ -152,6 +165,7 @@ export default function BlindboxApp() {
 
   const handleSelectGenre = async (slug: string) => {
     if (!sessionId) return;
+    setInlineError(null);
     setStep("reveal_box");
     setIsRevealing(true);
 
@@ -161,7 +175,7 @@ export default function BlindboxApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, universeSlug: slug }),
       });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
 
       // Delay reveal for animation
       setTimeout(() => {
@@ -173,6 +187,10 @@ export default function BlindboxApp() {
     } catch (err) {
       console.error("Error revealing box:", err);
       setIsRevealing(false);
+      setInlineError(
+        err instanceof Error ? err.message : "Failed to reveal a box."
+      );
+      setStep("genre");
     }
   };
 
@@ -180,6 +198,7 @@ export default function BlindboxApp() {
 
   const handleAcceptBox = async () => {
     if (!sessionId) return;
+    setInlineError(null);
     setStep("reveal_item");
     setIsRevealing(true);
 
@@ -189,7 +208,10 @@ export default function BlindboxApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),
       });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
+      if (!data.item) {
+        throw new Error("No item was returned for this box.");
+      }
 
       setTimeout(() => {
         setSelectedItem(data.item);
@@ -199,6 +221,10 @@ export default function BlindboxApp() {
     } catch (err) {
       console.error("Error revealing item:", err);
       setIsRevealing(false);
+      setInlineError(
+        err instanceof Error ? err.message : "Failed to reveal an item."
+      );
+      setStep("reveal_box");
     }
   };
 
@@ -209,6 +235,7 @@ export default function BlindboxApp() {
 
   const doRerollBox = async (paymentIntentId: string) => {
     if (!sessionId) return;
+    setInlineError(null);
     setStep("reveal_box");
     setIsRevealing(true);
 
@@ -222,7 +249,10 @@ export default function BlindboxApp() {
           paymentIntentId,
         }),
       });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
+      if (!data.box) {
+        throw new Error("No box was returned for reroll.");
+      }
 
       setTimeout(() => {
         setSelectedBox(data.box);
@@ -233,6 +263,10 @@ export default function BlindboxApp() {
     } catch (err) {
       console.error("Error rerolling box:", err);
       setIsRevealing(false);
+      setInlineError(
+        err instanceof Error ? err.message : "Failed to reroll box."
+      );
+      setStep("reveal_box");
     }
   };
 
@@ -250,6 +284,7 @@ export default function BlindboxApp() {
 
   const doRerollItem = async (paymentIntentId: string) => {
     if (!sessionId) return;
+    setInlineError(null);
     setStep("reveal_item");
     setIsRevealing(true);
 
@@ -263,7 +298,10 @@ export default function BlindboxApp() {
           paymentIntentId,
         }),
       });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
+      if (!data.item) {
+        throw new Error("No item was returned for reroll.");
+      }
 
       setTimeout(() => {
         setSelectedItem(data.item);
@@ -273,6 +311,10 @@ export default function BlindboxApp() {
     } catch (err) {
       console.error("Error rerolling item:", err);
       setIsRevealing(false);
+      setInlineError(
+        err instanceof Error ? err.message : "Failed to reroll item."
+      );
+      setStep("reveal_item");
     }
   };
 
@@ -288,6 +330,7 @@ export default function BlindboxApp() {
     setRerollCount(0);
     setIsRevealing(false);
     setShowConfetti(false);
+    setInlineError(null);
   };
 
   // Theme colors
@@ -413,6 +456,23 @@ export default function BlindboxApp() {
             animation: "slideUp 0.5s ease",
           }}
         >
+          {inlineError && (
+            <div
+              style={{
+                marginBottom: 16,
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid rgba(230,57,70,0.4)",
+                background: "rgba(230,57,70,0.12)",
+                color: "#ffd7dc",
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              {inlineError}
+            </div>
+          )}
+
           {step === "select" && <StepLanding onBuy={handleBuy} />}
 
           {step === "genre" && (

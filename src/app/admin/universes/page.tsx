@@ -79,6 +79,13 @@ export default function UniversesPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // Edit item form
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState({ name: "", rarity: "standard", imageUrl: "" });
+  const [editItemFile, setEditItemFile] = useState<File | null>(null);
+  const [editUploadingImage, setEditUploadingImage] = useState(false);
+  const [editUploadError, setEditUploadError] = useState<string | null>(null);
+
   const fetchUniverses = useCallback(() => {
     fetch("/api/admin/universes")
       .then((r) => r.json())
@@ -219,6 +226,53 @@ export default function UniversesPage() {
     if (expandedBox) await fetchItemsForBox(expandedBox);
     if (expandedUniverse) await fetchBoxesForUniverse(expandedUniverse);
     fetchUniverses();
+  };
+
+  const startEditItem = (item: Item) => {
+    setEditingItemId(item.id);
+    setEditItem({ name: item.name, rarity: item.rarity, imageUrl: item.imageUrl || "" });
+    setEditItemFile(null);
+    setEditUploadError(null);
+  };
+
+  const saveEditItem = async (item: Item, boxId: string) => {
+    setEditUploadError(null);
+    let imageUrl = editItem.imageUrl.trim();
+
+    if (editItemFile) {
+      setEditUploadingImage(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", editItemFile);
+        const uploadRes = await fetch("/api/admin/uploads/item-image", {
+          method: "POST",
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.imageUrl) {
+          setEditUploadError(uploadData.error || "Image upload failed.");
+          setEditUploadingImage(false);
+          return;
+        }
+        imageUrl = uploadData.imageUrl;
+      } catch (error) {
+        console.error(error);
+        setEditUploadError("Image upload failed.");
+        setEditUploadingImage(false);
+        return;
+      } finally {
+        setEditUploadingImage(false);
+      }
+    }
+
+    await fetch("/api/admin/items", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id, name: editItem.name, rarity: editItem.rarity, imageUrl }),
+    });
+    setEditingItemId(null);
+    setEditItemFile(null);
+    await fetchItemsForBox(boxId);
   };
 
   if (loading) {
@@ -560,53 +614,122 @@ export default function UniversesPage() {
                                   <div
                                     key={item.id}
                                     style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
                                       padding: "8px 12px",
                                       background: "rgba(255,255,255,0.02)",
                                       borderRadius: 8,
                                     }}
                                   >
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                      {item.imageUrl ? (
-                                        <img
-                                          src={item.imageUrl}
-                                          alt={item.name}
-                                          style={{
-                                            width: 22,
-                                            height: 22,
-                                            objectFit: "cover",
-                                            borderRadius: 4,
-                                            border: "1px solid rgba(255,255,255,0.1)",
-                                          }}
+                                    {editingItemId === item.id ? (
+                                      <div>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 8, marginBottom: 8 }}>
+                                          <input
+                                            style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }}
+                                            placeholder="Item name"
+                                            value={editItem.name}
+                                            onChange={(e) => setEditItem((i) => ({ ...i, name: e.target.value }))}
+                                          />
+                                          <select
+                                            style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }}
+                                            value={editItem.rarity}
+                                            onChange={(e) => setEditItem((i) => ({ ...i, rarity: e.target.value }))}
+                                          >
+                                            <option value="standard">Standard</option>
+                                            <option value="rare">Rare</option>
+                                            <option value="ultra_rare">Ultra Rare</option>
+                                          </select>
+                                        </div>
+                                        <div style={{ marginBottom: 8 }}>
+                                          <input
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp,image/gif"
+                                            onChange={(e) => setEditItemFile(e.target.files?.[0] || null)}
+                                            style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }}
+                                          />
+                                          {editItemFile && (
+                                            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 4 }}>
+                                              Selected: {editItemFile.name}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <input
+                                          style={{ ...inputStyle, padding: "8px 12px", fontSize: 13, marginBottom: 8 }}
+                                          placeholder="Or paste image URL"
+                                          value={editItem.imageUrl}
+                                          onChange={(e) => setEditItem((i) => ({ ...i, imageUrl: e.target.value }))}
                                         />
-                                      ) : (
-                                        <span style={{ fontSize: 12 }}>🌟</span>
-                                      )}
-                                      <span style={{ fontSize: 13, fontWeight: 600 }}>{item.name}</span>
-                                      {item.rarity !== "standard" && (
-                                        <span
-                                          style={{
-                                            fontSize: 10,
-                                            padding: "2px 8px",
-                                            borderRadius: 6,
-                                            background: item.rarity === "ultra_rare" ? "rgba(123,47,247,0.2)" : "rgba(255,203,5,0.2)",
-                                            color: item.rarity === "ultra_rare" ? "#7B2FF7" : "#FFCB05",
-                                            fontWeight: 700,
-                                            textTransform: "uppercase",
-                                          }}
-                                        >
-                                          {item.rarity.replace("_", " ")}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <button
-                                      onClick={() => deleteItem(item.id)}
-                                      style={{ background: "none", border: "none", color: "rgba(230,57,70,0.5)", fontSize: 11, cursor: "pointer", fontWeight: 600 }}
-                                    >
-                                      Remove
-                                    </button>
+                                        {editUploadingImage && (
+                                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 8 }}>Uploading...</div>
+                                        )}
+                                        {editUploadError && (
+                                          <div style={{ fontSize: 11, color: "#E63946", marginBottom: 8 }}>{editUploadError}</div>
+                                        )}
+                                        <div style={{ display: "flex", gap: 6 }}>
+                                          <button
+                                            onClick={() => saveEditItem(item, box.id)}
+                                            disabled={editUploadingImage}
+                                            style={{ ...btnStyle, background: "#6BCB77", color: "#000", padding: "6px 14px", fontSize: 12, opacity: editUploadingImage ? 0.7 : 1 }}
+                                          >
+                                            Save
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingItemId(null)}
+                                            style={{ ...btnStyle, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", padding: "6px 14px", fontSize: 12 }}
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                          {item.imageUrl ? (
+                                            <img
+                                              src={item.imageUrl}
+                                              alt={item.name}
+                                              style={{
+                                                width: 22,
+                                                height: 22,
+                                                objectFit: "cover",
+                                                borderRadius: 4,
+                                                border: "1px solid rgba(255,255,255,0.1)",
+                                              }}
+                                            />
+                                          ) : (
+                                            <span style={{ fontSize: 12 }}>🌟</span>
+                                          )}
+                                          <span style={{ fontSize: 13, fontWeight: 600 }}>{item.name}</span>
+                                          {item.rarity !== "standard" && (
+                                            <span
+                                              style={{
+                                                fontSize: 10,
+                                                padding: "2px 8px",
+                                                borderRadius: 6,
+                                                background: item.rarity === "ultra_rare" ? "rgba(123,47,247,0.2)" : "rgba(255,203,5,0.2)",
+                                                color: item.rarity === "ultra_rare" ? "#7B2FF7" : "#FFCB05",
+                                                fontWeight: 700,
+                                                textTransform: "uppercase",
+                                              }}
+                                            >
+                                              {item.rarity.replace("_", " ")}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                          <button
+                                            onClick={() => startEditItem(item)}
+                                            style={{ background: "none", border: "none", color: "rgba(107,203,119,0.7)", fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={() => deleteItem(item.id)}
+                                            style={{ background: "none", border: "none", color: "rgba(230,57,70,0.5)", fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+                                          >
+                                            Remove
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 ))}
                               </div>
