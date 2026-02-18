@@ -13,7 +13,7 @@ interface Box {
   id: string;
   name: string;
   img: string;
-  items: Item[];
+  items?: Item[];
   _count: { items: number };
 }
 
@@ -24,7 +24,7 @@ interface Universe {
   emoji: string;
   color: string;
   gradient: string;
-  boxes: Box[];
+  boxes?: Box[];
   _count: { boxes: number };
 }
 
@@ -52,9 +52,13 @@ const btnStyle: React.CSSProperties = {
 
 export default function UniversesPage() {
   const [universes, setUniverses] = useState<Universe[]>([]);
+  const [boxesByUniverse, setBoxesByUniverse] = useState<Record<string, Box[]>>({});
+  const [itemsByBox, setItemsByBox] = useState<Record<string, Item[]>>({});
   const [loading, setLoading] = useState(true);
   const [expandedUniverse, setExpandedUniverse] = useState<string | null>(null);
   const [expandedBox, setExpandedBox] = useState<string | null>(null);
+  const [loadingUniverseBoxes, setLoadingUniverseBoxes] = useState<string | null>(null);
+  const [loadingBoxItems, setLoadingBoxItems] = useState<string | null>(null);
 
   // New universe form
   const [showNewUniverse, setShowNewUniverse] = useState(false);
@@ -71,6 +75,9 @@ export default function UniversesPage() {
     rarity: "standard",
     imageUrl: "",
   });
+  const [newItemFile, setNewItemFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const fetchUniverses = useCallback(() => {
     fetch("/api/admin/universes")
@@ -80,6 +87,32 @@ export default function UniversesPage() {
         setLoading(false);
       })
       .catch(console.error);
+  }, []);
+
+  const fetchBoxesForUniverse = useCallback(async (universeId: string) => {
+    setLoadingUniverseBoxes(universeId);
+    try {
+      const response = await fetch(`/api/admin/universes/${universeId}/boxes`);
+      const data = await response.json();
+      setBoxesByUniverse((prev) => ({ ...prev, [universeId]: data.boxes || [] }));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingUniverseBoxes(null);
+    }
+  }, []);
+
+  const fetchItemsForBox = useCallback(async (boxId: string) => {
+    setLoadingBoxItems(boxId);
+    try {
+      const response = await fetch(`/api/admin/boxes/${boxId}/items`);
+      const data = await response.json();
+      setItemsByBox((prev) => ({ ...prev, [boxId]: data.items || [] }));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingBoxItems(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -102,6 +135,11 @@ export default function UniversesPage() {
   const deleteUniverse = async (id: string) => {
     if (!confirm("Delete this universe and all its boxes/items?")) return;
     await fetch(`/api/admin/universes?id=${id}`, { method: "DELETE" });
+    setBoxesByUniverse((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     fetchUniverses();
   };
 
@@ -115,30 +153,71 @@ export default function UniversesPage() {
     });
     setNewBox({ name: "", img: "" });
     setAddingBoxTo(null);
+    await fetchBoxesForUniverse(universeId);
     fetchUniverses();
   };
 
   const deleteBox = async (id: string) => {
     if (!confirm("Delete this box and all its items?")) return;
     await fetch(`/api/admin/boxes?id=${id}`, { method: "DELETE" });
+    setItemsByBox((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    if (expandedUniverse) await fetchBoxesForUniverse(expandedUniverse);
     fetchUniverses();
   };
 
   // --- Item CRUD ---
   const createItem = async (boxId: string) => {
     if (!newItem.name) return;
+    setUploadError(null);
+
+    let imageUrl = newItem.imageUrl.trim();
+    if (newItemFile) {
+      setUploadingImage(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", newItemFile);
+        const uploadRes = await fetch("/api/admin/uploads/item-image", {
+          method: "POST",
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.imageUrl) {
+          setUploadError(uploadData.error || "Image upload failed.");
+          setUploadingImage(false);
+          return;
+        }
+        imageUrl = uploadData.imageUrl;
+      } catch (error) {
+        console.error(error);
+        setUploadError("Image upload failed.");
+        setUploadingImage(false);
+        return;
+      } finally {
+        setUploadingImage(false);
+      }
+    }
+
     await fetch("/api/admin/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...newItem, boxId }),
+      body: JSON.stringify({ ...newItem, imageUrl, boxId }),
     });
     setNewItem({ name: "", rarity: "standard", imageUrl: "" });
+    setNewItemFile(null);
     setAddingItemTo(null);
+    await fetchItemsForBox(boxId);
+    if (expandedUniverse) await fetchBoxesForUniverse(expandedUniverse);
     fetchUniverses();
   };
 
   const deleteItem = async (id: string) => {
     await fetch(`/api/admin/items?id=${id}`, { method: "DELETE" });
+    if (expandedBox) await fetchItemsForBox(expandedBox);
+    if (expandedUniverse) await fetchBoxesForUniverse(expandedUniverse);
     fetchUniverses();
   };
 
@@ -252,7 +331,13 @@ export default function UniversesPage() {
                 cursor: "pointer",
                 borderLeft: `4px solid ${universe.color}`,
               }}
-              onClick={() => setExpandedUniverse(expandedUniverse === universe.id ? null : universe.id)}
+              onClick={() => {
+                const next = expandedUniverse === universe.id ? null : universe.id;
+                setExpandedUniverse(next);
+                if (next && !boxesByUniverse[universe.id]) {
+                  void fetchBoxesForUniverse(universe.id);
+                }
+              }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <div
@@ -312,13 +397,17 @@ export default function UniversesPage() {
                   </div>
                 )}
 
-                {universe.boxes.length === 0 ? (
+                {loadingUniverseBoxes === universe.id && !boxesByUniverse[universe.id] ? (
+                  <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 13, padding: "12px 0" }}>
+                    Loading boxes...
+                  </div>
+                ) : (boxesByUniverse[universe.id] || []).length === 0 ? (
                   <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 13, padding: "12px 0" }}>
                     No boxes yet. Add one above.
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {universe.boxes.map((box) => (
+                    {(boxesByUniverse[universe.id] || []).map((box) => (
                       <div key={box.id}>
                         <div
                           style={{
@@ -330,7 +419,13 @@ export default function UniversesPage() {
                             borderRadius: 10,
                             cursor: "pointer",
                           }}
-                          onClick={() => setExpandedBox(expandedBox === box.id ? null : box.id)}
+                          onClick={() => {
+                            const next = expandedBox === box.id ? null : box.id;
+                            setExpandedBox(next);
+                            if (next && !itemsByBox[box.id]) {
+                              void fetchItemsForBox(box.id);
+                            }
+                          }}
                         >
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <span style={{ fontSize: 20 }}>{box.img}</span>
@@ -365,6 +460,8 @@ export default function UniversesPage() {
                                 onClick={() => {
                                   setAddingItemTo(addingItemTo === box.id ? null : box.id);
                                   setNewItem({ name: "", rarity: "standard", imageUrl: "" });
+                                  setNewItemFile(null);
+                                  setUploadError(null);
                                 }}
                                 style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 12, cursor: "pointer", fontWeight: 600 }}
                               >
@@ -384,27 +481,82 @@ export default function UniversesPage() {
                                   <option value="rare">Rare</option>
                                   <option value="ultra_rare">Ultra Rare</option>
                                 </select>
-                                <button onClick={() => createItem(box.id)} style={{ ...btnStyle, background: "#6BCB77", color: "#000", padding: "8px 14px", fontSize: 12 }}>Add</button>
+                                <button
+                                  onClick={() => createItem(box.id)}
+                                  disabled={uploadingImage}
+                                  style={{
+                                    ...btnStyle,
+                                    background: "#6BCB77",
+                                    color: "#000",
+                                    padding: "8px 14px",
+                                    fontSize: 12,
+                                    opacity: uploadingImage ? 0.7 : 1,
+                                    cursor: uploadingImage ? "not-allowed" : "pointer",
+                                  }}
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            )}
+                            {addingItemTo === box.id && (
+                              <div style={{ marginBottom: 8 }}>
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp,image/gif"
+                                  onChange={(e) =>
+                                    setNewItemFile(e.target.files?.[0] || null)
+                                  }
+                                  style={{
+                                    ...inputStyle,
+                                    padding: "8px 12px",
+                                    fontSize: 13,
+                                  }}
+                                />
+                                {newItemFile && (
+                                  <div
+                                    style={{
+                                      fontSize: 11,
+                                      color: "rgba(255,255,255,0.55)",
+                                      marginTop: 4,
+                                    }}
+                                  >
+                                    Selected file: {newItemFile.name}
+                                  </div>
+                                )}
                               </div>
                             )}
                             {addingItemTo === box.id && (
                               <input
                                 style={{ ...inputStyle, padding: "8px 12px", fontSize: 13, marginBottom: 8 }}
-                                placeholder="Optional image URL (https://...)"
+                                placeholder="Optional image URL (or leave blank if uploading)"
                                 value={newItem.imageUrl}
                                 onChange={(e) =>
                                   setNewItem((i) => ({ ...i, imageUrl: e.target.value }))
                                 }
                               />
                             )}
+                            {addingItemTo === box.id && uploadingImage && (
+                              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 8 }}>
+                                Uploading image...
+                              </div>
+                            )}
+                            {addingItemTo === box.id && uploadError && (
+                              <div style={{ fontSize: 11, color: "#E63946", marginBottom: 8 }}>
+                                {uploadError}
+                              </div>
+                            )}
 
-                            {box.items.length === 0 ? (
+                            {loadingBoxItems === box.id && !itemsByBox[box.id] ? (
+                              <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 12, padding: "4px 0" }}>
+                                Loading items...
+                              </div>
+                            ) : (itemsByBox[box.id] || []).length === 0 ? (
                               <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 12, padding: "4px 0" }}>
                                 No items yet.
                               </div>
                             ) : (
                               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                {box.items.map((item) => (
+                                {(itemsByBox[box.id] || []).map((item) => (
                                   <div
                                     key={item.id}
                                     style={{

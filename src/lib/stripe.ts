@@ -1,6 +1,8 @@
 import Stripe from "stripe";
+import { getStripeEnv } from "@/lib/env";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const env = getStripeEnv();
+export const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
 export const PRICES = {
   ENTRY: 1300, // $13.00 in cents

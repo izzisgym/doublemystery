@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { logError } from "@/lib/logger";
+import { secureRandomIndex } from "@/lib/random";
+import { parseJson, ValidationError } from "@/lib/validate";
 import { prisma } from "@/lib/prisma";
 
+const revealItemSchema = z.object({
+  sessionId: z.string().min(1),
+});
+
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
-    const body = await request.json();
-    const { sessionId } = body as { sessionId: string };
+    const { sessionId } = await parseJson(request, revealItemSchema);
 
     const session = await prisma.blindboxSession.findUnique({
       where: { id: sessionId },
@@ -29,8 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Server-side random pick
-    const randomIndex = Math.floor(Math.random() * items.length);
+    const randomIndex = secureRandomIndex(items.length);
     const selectedItem = items[randomIndex];
 
     await prisma.blindboxSession.update({
@@ -46,7 +53,10 @@ export async function POST(request: NextRequest) {
       box: session.selectedBox,
     });
   } catch (error) {
-    console.error("Error revealing item:", error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    logError("Error revealing item", error, { requestId });
     return NextResponse.json(
       { error: "Failed to reveal item" },
       { status: 500 }

@@ -1,20 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { logError } from "@/lib/logger";
+import { applyRateLimit } from "@/lib/rate-limit";
+import { parseJson, ValidationError } from "@/lib/validate";
 import { prisma } from "@/lib/prisma";
 import { splitPaymentIds } from "@/lib/payments";
 import { stripe, PRICES } from "@/lib/stripe";
 
+const checkoutSchema = z.object({
+  sessionId: z.string().min(1),
+  customerName: z.string().trim().min(2).max(120),
+  streetAddress: z.string().trim().min(4).max(220),
+  city: z.string().trim().min(2).max(120),
+  state: z.string().trim().min(2).max(80),
+  zipCode: z.string().trim().min(3).max(20),
+});
+
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
-    const body = await request.json();
+    const limit = applyRateLimit(request, {
+      keyPrefix: "checkout",
+      windowMs: 60_000,
+      maxRequests: 10,
+    });
+    if (limit) return limit;
+
     const { sessionId, customerName, streetAddress, city, state, zipCode } =
-      body as {
-        sessionId: string;
-        customerName: string;
-        streetAddress: string;
-        city: string;
-        state: string;
-        zipCode: string;
-      };
+      await parseJson(request, checkoutSchema);
 
     const session = await prisma.blindboxSession.findUnique({
       where: { id: sessionId },
@@ -53,35 +66,37 @@ export async function POST(request: NextRequest) {
 
     const paidCents = intents.reduce((sum, pi) => sum + pi.amount_received, 0);
     const expectedCents = PRICES.ENTRY + session.rerollCount * PRICES.REROLL;
-    if (paidCents < expectedCents) {
+    if (paidCents !== expectedCents) {
       return NextResponse.json(
         { error: "Session payments do not match expected total" },
         { status: 400 }
       );
     }
 
-    // Create the order
-    const order = await prisma.order.create({
-      data: {
-        sessionId,
-        customerName,
-        streetAddress,
-        city,
-        state,
-        zipCode,
-        totalAmount: expectedCents / 100,
-        stripePaymentId: paymentIntentIds[0] || null,
-        status: "pending",
-      },
-    });
+    const order = await prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
+        data: {
+          sessionId,
+          customerName,
+          streetAddress,
+          city,
+          state,
+          zipCode,
+          totalAmount: expectedCents / 100,
+          stripePaymentId: paymentIntentIds[0] || null,
+          status: "pending",
+        },
+      });
 
-    // Mark session as completed
-    await prisma.blindboxSession.update({
-      where: { id: sessionId },
-      data: {
-        status: "completed",
-        currentStep: "checkout",
-      },
+      await tx.blindboxSession.update({
+        where: { id: sessionId },
+        data: {
+          status: "completed",
+          currentStep: "checkout",
+        },
+      });
+
+      return createdOrder;
     });
 
     return NextResponse.json({
@@ -93,7 +108,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error processing checkout:", error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    logError("Error processing checkout", error, { requestId });
     return NextResponse.json(
       { error: "Failed to process checkout" },
       { status: 500 }

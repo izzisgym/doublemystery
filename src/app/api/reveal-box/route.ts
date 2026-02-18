@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { logError } from "@/lib/logger";
+import { secureRandomIndex } from "@/lib/random";
+import { parseJson, ValidationError } from "@/lib/validate";
 import { prisma } from "@/lib/prisma";
 
+const revealBoxSchema = z.object({
+  sessionId: z.string().min(1),
+  universeSlug: z.string().min(1),
+});
+
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
-    const body = await request.json();
-    const { sessionId, universeSlug } = body as {
-      sessionId: string;
-      universeSlug: string;
-    };
+    const { sessionId, universeSlug } = await parseJson(request, revealBoxSchema);
 
     const session = await prisma.blindboxSession.findUnique({
       where: { id: sessionId },
@@ -32,8 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Server-side random pick
-    const randomIndex = Math.floor(Math.random() * universe.boxes.length);
+    const randomIndex = secureRandomIndex(universe.boxes.length);
     const selectedBox = universe.boxes[randomIndex];
 
     await prisma.blindboxSession.update({
@@ -57,7 +62,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error revealing box:", error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    logError("Error revealing box", error, { requestId });
     return NextResponse.json(
       { error: "Failed to reveal box" },
       { status: 500 }

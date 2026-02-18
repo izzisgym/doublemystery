@@ -9,13 +9,18 @@ export default function Confetti({
 }) {
   if (!active) return null;
 
+  const seeded = (seed: number) => {
+    const value = Math.sin(seed * 9999) * 10000;
+    return value - Math.floor(value);
+  };
+
   const particles = Array.from({ length: 30 }, (_, i) => ({
     id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 0.5,
-    duration: 1 + Math.random() * 1.5,
-    size: 4 + Math.random() * 8,
-    rotation: Math.random() * 360,
+    x: seeded(i + 1) * 100,
+    delay: seeded(i + 11) * 0.5,
+    duration: 1 + seeded(i + 21) * 1.5,
+    size: 4 + seeded(i + 31) * 8,
+    rotation: seeded(i + 41) * 360,
   }));
 
   const colors = [color, "#FFD700", "#FF6B6B", "#4ECDC4", "#FF69B4", "#00D2FF"];

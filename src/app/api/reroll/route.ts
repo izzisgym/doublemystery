@@ -1,21 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { logError } from "@/lib/logger";
+import { secureRandomIndex } from "@/lib/random";
+import { applyRateLimit } from "@/lib/rate-limit";
+import { parseJson, ValidationError } from "@/lib/validate";
 import { prisma } from "@/lib/prisma";
 import { splitPaymentIds, verifyPaymentIntent } from "@/lib/payments";
 
+const rerollSchema = z.object({
+  sessionId: z.string().min(1),
+  type: z.enum(["box", "item"]),
+  paymentIntentId: z.string().min(1),
+});
+
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
-    const body = await request.json();
-    const { sessionId, type, paymentIntentId } = body as {
-      sessionId: string;
-      type: "box" | "item";
-      paymentIntentId: string;
-    };
-    if (!sessionId || !paymentIntentId) {
-      return NextResponse.json(
-        { error: "sessionId and paymentIntentId are required" },
-        { status: 400 }
-      );
-    }
+    const limit = applyRateLimit(request, {
+      keyPrefix: "reroll",
+      windowMs: 60_000,
+      maxRequests: 20,
+    });
+    if (limit) return limit;
+
+    const { sessionId, type, paymentIntentId } = await parseJson(
+      request,
+      rerollSchema
+    );
 
     const session = await prisma.blindboxSession.findUnique({
       where: { id: sessionId },
@@ -38,20 +49,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Record the reroll payment
     const existingIds = [...ids, paymentIntentId];
 
-    await prisma.blindboxSession.update({
-      where: { id: sessionId },
-      data: {
-        rerollCount: session.rerollCount + 1,
-        totalSpent: session.totalSpent + 2.0,
-        paymentIntentIds: existingIds.join(","),
-      },
-    });
-
     if (type === "box") {
-      // Re-pick a random box from the same universe
       const universe = await prisma.universe.findUnique({
         where: { slug: session.universeSlug! },
         include: { boxes: true },
@@ -64,17 +64,22 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const randomIndex = Math.floor(Math.random() * universe.boxes.length);
+      const randomIndex = secureRandomIndex(universe.boxes.length);
       const newBox = universe.boxes[randomIndex];
 
-      await prisma.blindboxSession.update({
-        where: { id: sessionId },
-        data: {
-          selectedBoxId: newBox.id,
-          selectedItemId: null,
-          currentStep: "reveal_box",
-        },
-      });
+      await prisma.$transaction([
+        prisma.blindboxSession.update({
+          where: { id: sessionId },
+          data: {
+            rerollCount: session.rerollCount + 1,
+            totalSpent: session.totalSpent + 2.0,
+            paymentIntentIds: existingIds.join(","),
+            selectedBoxId: newBox.id,
+            selectedItemId: null,
+            currentStep: "reveal_box",
+          },
+        }),
+      ]);
 
       return NextResponse.json({
         box: newBox,
@@ -87,25 +92,43 @@ export async function POST(request: NextRequest) {
         },
       });
     } else {
-      // Re-pick a random item from the same box
+      if (!session.selectedBoxId) {
+        return NextResponse.json(
+          { error: "No selected box found for this session" },
+          { status: 400 }
+        );
+      }
+
       const items = await prisma.item.findMany({
-        where: { boxId: session.selectedBoxId! },
+        where: { boxId: session.selectedBoxId },
       });
 
       const box = await prisma.box.findUnique({
-        where: { id: session.selectedBoxId! },
+        where: { id: session.selectedBoxId },
       });
 
-      const randomIndex = Math.floor(Math.random() * items.length);
+      if (items.length === 0) {
+        return NextResponse.json(
+          { error: "No items found in this box" },
+          { status: 404 }
+        );
+      }
+
+      const randomIndex = secureRandomIndex(items.length);
       const newItem = items[randomIndex];
 
-      await prisma.blindboxSession.update({
-        where: { id: sessionId },
-        data: {
-          selectedItemId: newItem.id,
-          currentStep: "reveal_item",
-        },
-      });
+      await prisma.$transaction([
+        prisma.blindboxSession.update({
+          where: { id: sessionId },
+          data: {
+            rerollCount: session.rerollCount + 1,
+            totalSpent: session.totalSpent + 2.0,
+            paymentIntentIds: existingIds.join(","),
+            selectedItemId: newItem.id,
+            currentStep: "reveal_item",
+          },
+        }),
+      ]);
 
       return NextResponse.json({
         item: newItem,
@@ -113,7 +136,10 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error("Error processing reroll:", error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    logError("Error processing reroll", error, { requestId });
     return NextResponse.json(
       { error: "Failed to process reroll" },
       { status: 500 }

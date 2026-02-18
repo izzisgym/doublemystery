@@ -1,14 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { logError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { applyRateLimit } from "@/lib/rate-limit";
+import { parseJson, ValidationError } from "@/lib/validate";
+
+const createBoxSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  img: z.string().trim().min(1).max(32),
+  universeId: z.string().min(1),
+});
+
+const updateBoxSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1).max(120),
+  img: z.string().trim().min(1).max(32),
+});
 
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
-    const body = await request.json();
-    const { name, img, universeId } = body as {
-      name: string;
-      img: string;
-      universeId: string;
-    };
+    const limit = applyRateLimit(request, {
+      keyPrefix: "admin-boxes-write",
+      windowMs: 60_000,
+      maxRequests: 60,
+    });
+    if (limit) return limit;
+
+    const { name, img, universeId } = await parseJson(request, createBoxSchema);
 
     const box = await prisma.box.create({
       data: { name, img, universeId },
@@ -17,7 +36,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ box });
   } catch (error) {
-    console.error("Error creating box:", error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    logError("Error creating box", error, { requestId });
     return NextResponse.json(
       { error: "Failed to create box" },
       { status: 500 }
@@ -26,13 +48,16 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
-    const body = await request.json();
-    const { id, name, img } = body as {
-      id: string;
-      name: string;
-      img: string;
-    };
+    const limit = applyRateLimit(request, {
+      keyPrefix: "admin-boxes-write",
+      windowMs: 60_000,
+      maxRequests: 60,
+    });
+    if (limit) return limit;
+
+    const { id, name, img } = await parseJson(request, updateBoxSchema);
 
     const box = await prisma.box.update({
       where: { id },
@@ -42,7 +67,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ box });
   } catch (error) {
-    console.error("Error updating box:", error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    logError("Error updating box", error, { requestId });
     return NextResponse.json(
       { error: "Failed to update box" },
       { status: 500 }
@@ -51,7 +79,15 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
+    const limit = applyRateLimit(request, {
+      keyPrefix: "admin-boxes-write",
+      windowMs: 60_000,
+      maxRequests: 60,
+    });
+    if (limit) return limit;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -64,7 +100,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting box:", error);
+    logError("Error deleting box", error, { requestId });
     return NextResponse.json(
       { error: "Failed to delete box" },
       { status: 500 }

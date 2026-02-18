@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logError } from "@/lib/logger";
+
+export const revalidate = 300;
 
 export async function GET() {
   try {
@@ -13,9 +16,16 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ universes });
+    return NextResponse.json(
+      { universes },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error) {
-    console.error("Error fetching universes:", error);
+    logError("Error fetching universes", error);
     return NextResponse.json(
       { error: "Failed to fetch universes" },
       { status: 500 }

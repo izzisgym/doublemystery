@@ -1,15 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { logError } from "@/lib/logger";
+import { applyRateLimit } from "@/lib/rate-limit";
+import { parseJson, ValidationError } from "@/lib/validate";
 import { stripe, PRICES } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 
+const paymentIntentSchema = z.object({
+  type: z.enum(["entry", "reroll"]),
+  sessionId: z.string().min(1).optional(),
+});
+
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
-    const body = await request.json();
-    const { type, sessionId } = body as {
-      type: "entry" | "reroll";
-      sessionId?: string;
-    };
-    if (!type || (type === "reroll" && !sessionId)) {
+    const limit = applyRateLimit(request, {
+      keyPrefix: "payment-intent",
+      windowMs: 60_000,
+      maxRequests: 20,
+    });
+    if (limit) return limit;
+
+    const { type, sessionId } = await parseJson(request, paymentIntentSchema);
+    if (type === "reroll" && !sessionId) {
       return NextResponse.json(
         { error: "Invalid payment request" },
         { status: 400 }
@@ -50,7 +63,10 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
-    console.error("Error creating payment intent:", error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    logError("Error creating payment intent", error, { requestId });
     return NextResponse.json(
       { error: "Failed to create payment intent" },
       { status: 500 }

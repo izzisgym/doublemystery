@@ -1,15 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { logError } from "@/lib/logger";
+import { applyRateLimit } from "@/lib/rate-limit";
+import { parseJson, ValidationError } from "@/lib/validate";
 import { prisma } from "@/lib/prisma";
 
+const imageUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine(
+    (value) =>
+      value.length === 0 ||
+      value.startsWith("/") ||
+      /^https?:\/\//i.test(value),
+    "imageUrl must be a relative path or http(s) URL"
+  );
+
+const createItemSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  rarity: z.string().trim().min(1).max(32).optional(),
+  boxId: z.string().min(1),
+  imageUrl: imageUrlSchema.optional(),
+});
+
+const updateItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1).max(120),
+  rarity: z.string().trim().min(1).max(32).optional(),
+  imageUrl: imageUrlSchema.optional(),
+});
+
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
-    const body = await request.json();
-    const { name, rarity, boxId, imageUrl } = body as {
-      name: string;
-      rarity?: string;
-      boxId: string;
-      imageUrl?: string;
-    };
+    const limit = applyRateLimit(request, {
+      keyPrefix: "admin-items-write",
+      windowMs: 60_000,
+      maxRequests: 90,
+    });
+    if (limit) return limit;
+
+    const { name, rarity, boxId, imageUrl } = await parseJson(
+      request,
+      createItemSchema
+    );
 
     const item = await prisma.item.create({
       data: {
@@ -22,7 +57,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ item });
   } catch (error) {
-    console.error("Error creating item:", error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    logError("Error creating item", error, { requestId });
     return NextResponse.json(
       { error: "Failed to create item" },
       { status: 500 }
@@ -31,14 +69,19 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
-    const body = await request.json();
-    const { id, name, rarity, imageUrl } = body as {
-      id: string;
-      name: string;
-      rarity?: string;
-      imageUrl?: string;
-    };
+    const limit = applyRateLimit(request, {
+      keyPrefix: "admin-items-write",
+      windowMs: 60_000,
+      maxRequests: 90,
+    });
+    if (limit) return limit;
+
+    const { id, name, rarity, imageUrl } = await parseJson(
+      request,
+      updateItemSchema
+    );
 
     const item = await prisma.item.update({
       where: { id },
@@ -51,7 +94,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ item });
   } catch (error) {
-    console.error("Error updating item:", error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    logError("Error updating item", error, { requestId });
     return NextResponse.json(
       { error: "Failed to update item" },
       { status: 500 }
@@ -60,7 +106,15 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   try {
+    const limit = applyRateLimit(request, {
+      keyPrefix: "admin-items-write",
+      windowMs: 60_000,
+      maxRequests: 90,
+    });
+    if (limit) return limit;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -72,7 +126,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting item:", error);
+    logError("Error deleting item", error, { requestId });
     return NextResponse.json(
       { error: "Failed to delete item" },
       { status: 500 }

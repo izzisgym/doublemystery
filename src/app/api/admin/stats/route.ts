@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -10,7 +11,7 @@ export async function GET() {
       totalUniverses,
       totalBoxes,
       totalItems,
-      orders,
+      revenueAggregate,
     ] = await Promise.all([
       prisma.order.count(),
       prisma.order.count({ where: { status: "pending" } }),
@@ -18,10 +19,10 @@ export async function GET() {
       prisma.universe.count(),
       prisma.box.count(),
       prisma.item.count(),
-      prisma.order.findMany({ select: { totalAmount: true } }),
+      prisma.order.aggregate({ _sum: { totalAmount: true } }),
     ]);
 
-    const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const totalRevenue = revenueAggregate._sum.totalAmount ?? 0;
 
     return NextResponse.json({
       totalOrders,
@@ -33,7 +34,7 @@ export async function GET() {
       totalItems,
     });
   } catch (error) {
-    console.error("Error fetching stats:", error);
+    logError("Error fetching stats", error);
     return NextResponse.json(
       { error: "Failed to fetch stats" },
       { status: 500 }

@@ -12,9 +12,11 @@ import StepRevealBox from "./StepRevealBox";
 import StepRevealItem from "./StepRevealItem";
 import StepCheckout from "./StepCheckout";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-);
+const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+if (!publishableKey) {
+  console.error("Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable.");
+}
+const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 interface UniverseData {
   slug: string;
@@ -48,7 +50,17 @@ interface UniverseInfo {
 export default function BlindboxApp() {
   const [step, setStep] = useState("select");
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [universes, setUniverses] = useState<UniverseData[]>([]);
+  const [universes, setUniverses] = useState<UniverseData[]>(() => {
+    if (typeof window === "undefined") return [];
+    const cached = sessionStorage.getItem("dm-universes-cache");
+    if (!cached) return [];
+    try {
+      return JSON.parse(cached) as UniverseData[];
+    } catch {
+      sessionStorage.removeItem("dm-universes-cache");
+      return [];
+    }
+  });
   const [selectedUniverse, setSelectedUniverse] = useState<UniverseInfo | null>(
     null
   );
@@ -58,7 +70,6 @@ export default function BlindboxApp() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [totalSpent, setTotalSpent] = useState(0);
   const [rerollCount, setRerollCount] = useState(0);
-  const [slideIn, setSlideIn] = useState(false);
 
   // Payment modal state
   const [showPayment, setShowPayment] = useState(false);
@@ -72,36 +83,29 @@ export default function BlindboxApp() {
       .then((r) => r.json())
       .then((data) => {
         if (data.universes) {
-          setUniverses(
-            data.universes.map(
-              (u: {
-                slug: string;
-                name: string;
-                emoji: string;
-                color: string;
-                gradient: string;
-                boxes: unknown[];
-              }) => ({
-                slug: u.slug,
-                name: u.name,
-                emoji: u.emoji,
-                color: u.color,
-                gradient: u.gradient,
-                boxCount: u.boxes.length,
-              })
-            )
+          const mapped = data.universes.map(
+            (u: {
+              slug: string;
+              name: string;
+              emoji: string;
+              color: string;
+              gradient: string;
+              boxes: unknown[];
+            }) => ({
+              slug: u.slug,
+              name: u.name,
+              emoji: u.emoji,
+              color: u.color,
+              gradient: u.gradient,
+              boxCount: u.boxes.length,
+            })
           );
+          setUniverses(mapped);
+          sessionStorage.setItem("dm-universes-cache", JSON.stringify(mapped));
         }
       })
       .catch(console.error);
   }, []);
-
-  // Slide-in animation on step change
-  useEffect(() => {
-    setSlideIn(true);
-    const t = setTimeout(() => setSlideIn(false), 600);
-    return () => clearTimeout(t);
-  }, [step]);
 
   const triggerConfetti = (duration = 2500) => {
     setShowConfetti(true);
@@ -401,11 +405,12 @@ export default function BlindboxApp() {
 
         {/* Main Content */}
         <div
+          key={step}
           style={{
             padding: "24px 20px 120px",
             position: "relative",
             zIndex: 10,
-            animation: slideIn ? "slideUp 0.5s ease" : "none",
+            animation: "slideUp 0.5s ease",
           }}
         >
           {step === "select" && <StepLanding onBuy={handleBuy} />}

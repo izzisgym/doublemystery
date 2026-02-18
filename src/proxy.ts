@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAdminEnv } from "@/lib/env";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 const PROTECTED_PREFIXES = ["/admin", "/api/admin"];
 
@@ -19,8 +21,16 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (!isProtected(pathname)) return NextResponse.next();
 
-  const adminUser = process.env.ADMIN_USERNAME;
-  const adminPass = process.env.ADMIN_PASSWORD;
+  const adminEnv = getAdminEnv();
+  const adminUser = adminEnv?.ADMIN_USERNAME;
+  const adminPass = adminEnv?.ADMIN_PASSWORD;
+
+  const rateLimitResponse = applyRateLimit(request, {
+    keyPrefix: "admin-auth",
+    windowMs: 60_000,
+    maxRequests: 120,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   // Fail closed if admin credentials are not configured.
   if (!adminUser || !adminPass) {
@@ -33,7 +43,12 @@ export function proxy(request: NextRequest) {
   }
 
   const encoded = authHeader.split(" ")[1];
-  const decoded = atob(encoded);
+  let decoded = "";
+  try {
+    decoded = atob(encoded);
+  } catch {
+    return unauthorizedResponse();
+  }
   const separator = decoded.indexOf(":");
   if (separator < 0) return unauthorizedResponse();
 
